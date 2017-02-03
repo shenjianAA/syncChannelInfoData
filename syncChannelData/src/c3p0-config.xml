@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<c3p0-config>
+
+    	<!-- 渠道数据库 -->
+    	<named-config name="ChannelDBConfig">
+        <property name="acquireIncrement">2</property>
+        <property name="initialPoolSize">5</property>
+        <property name="minPoolSize">5</property>
+        <property name="maxPoolSize">10</property>
+        <property name="maxStatements">150</property>
+        <property name="maxStatementsPerConnection">0</property>
+        <property name="driverClass">oracle.jdbc.driver.OracleDriver</property>
+        <!-- <property name="jdbcUrl">jdbc:oracle:thin:@egcms-db.nd.cmgame.com:1521/egcmcdb</property>
+        <property name="user">channel</property>
+        <property name="password">cHesLp76</property> -->
+        <property name="jdbcUrl">jdbc:oracle:thin:@192.168.56.26:1521:gosp</property>
+        <property name="user">newChannel</property>
+        <property name="password">newChannel</property>
+        <property name="idleConnectionTestPeriod">60</property>
+        <property name="preferredTestQuery">select 2 from dual</property>
+        <property name="testConnectionOnCheckin">true</property>
+        <property name="testConnectionOnCheckout">true</property>
+    </named-config> 
+   
+
+</c3p0-config>

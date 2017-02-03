@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root>
+    <sql id="get_sync_channelinfo" description="同步总部渠道信息数据">
+    		select 
+        info.id as ID,
+        info.parentChannelId as PARENT_CHANNEL_ID,
+        info.channelName as CHANNEL_NAME,
+    DECODE(info.channelState0, 05,1,06,1,07,2,08,3,09,3) as CHANNEL_STATE0,
+    info.corpId as CORP_ID,
+    info.company_name_cn as company_name_cn,
+    DECODE(info.company_status0, 06,1,07,2,3) as company_status0,
+    DECODE(info.channelCorpType, 0,1,0) as CHANNEL_CORP_TYPE,
+    info.channelTypeIdOne as  classCode,
+    info.channelTypeIdTwo as  subClassCode
+    from (select t.ID as id,
+                               t.CORP_ID as corpId,
+                               t.PARENT_CHANNEL_ID as parentChannelId,
+                               t.CHANNEL_NAME as channelName,
+                               t.CHANNEL_CORP_TYPE as channelCorpType,
+                               t.CHANNEL_STATE0 as channelState0,
+                               CHANNEL_TYPE1 as channelTypeIdOne,
+                               CHANNEL_TYPE2 as channelTypeIdTwo,
+                               t.company_name_cn as company_name_cn,
+                               t.company_status0 as company_status0,
+                               t.pause_flag as pause_flag
+                          from (select cha.*,
+                                       co.company_name_cn,
+                                       co.company_status0,
+                                       substr(t2.ids,
+                                              1,
+                                              instr(t2.ids, '-', 1, 1) - 1) CHANNEL_TYPE1,
+                                       substr(t2.ids,
+                                              instr(t2.ids, '-', 1, 1) + 1,
+                                              instr(t2.ids, '-', 1, 2) -
+                                              instr(t2.ids, '-', 1, 1) - 1) CHANNEL_TYPE2
+                                  from T_CHANNEL_INFO cha
+                                  left join t_channel_corp co on cha.corp_id =
+                                                                 co.company_code,
+                                 (select substr(ids,
+                                                                                2,
+                                                                                length(ids)) ids,
+                                                                         id,
+                                                                         name,
+                                                                         lev
+                                                                    from (select SYS_CONNECT_BY_PATH(channel_type_id,
+                                                                                                     '-') || '-' ids,
+                                                                                 t.channel_type_id id,
+                                                                                 t.channel_type_name name,
+                                                                                 LEVEL lev
+                                                                            from t_channel_type t
+                                                                            left join t_channel_assess_type ta on (t.channel_assess_type_id =
+                                                                                                                  ta.channel_assess_type_id)
+                                                                           where t.status =03
+                                                                           start with parent_channel_type_id = -1
+                                                                          connect by parent_channel_type_id = prior
+                                                                                     channel_type_id)) t2
+                                 where cha.channel_type_id = t2.id
+                                   and cha.is_delete = 0
+                                   and cha.id='40052822060' 
+                                   ) t) info
+                  left join T_CHANNEL_VERIFY v on (v.channel_id = info.id and
+                                                  v.is_delete = 0)
+                  left join (select BD_ID, BD_NAME, BD_VALUE
+                              from t_sys_basedata ts1
+                             where ts1.bd_parent_id =
+                                   (select ts2.bd_id
+                                      from t_sys_basedata ts2
+                                     where ts2.bd_flag = 'corpType')) corpTypes on to_char(info.channelcorptype) =
+                                                                                   corpTypes.BD_VALUE,
+                 t_channel_type tct1
+                 where tct1.channel_type_id = info.channelTypeIdOne
+    </sql>
+    
+    
+    <sql id="get_sync_channel_product" description="渠道内容产品信息数据同步">
+    	select operType as status,
+       channelCode as channel_id,
+       type as type,
+       cooperateCode as sp_code,
+       contentCode as contentid,
+       productCode as productCode 
+    from (
+      select
+        a.id as id,
+        DECODE(a.spread_state, 0,1,2,3) as operType,
+        a.channel_id as channelCode,
+        2 as type,
+        s.sp_code as cooperateCode,
+        a.contentid as contentCode,
+        DECODE(s.GAME_TYPE_ID,8,s.productcode,a.service_id) as productCode 
+        from t_channel_product_ref a ,t_gamedata_service s
+        where a.spread_state in (0,2)
+        and (a.service_id= s.operator_code)
+      union
+      select
+        a.id as id,
+        DECODE(a.spread_state, 0,1,2,3) as operType,
+        a.channel_id as channelCode,
+        2 as type,
+        p.sp_code as cooperateCode,
+        a.contentid as contentCode,
+        a.package_id as productCode
+        from t_channel_product_ref a ,t_gamedata_package p
+        where a.spread_state in (0,2)
+        and a.product_type=1
+        and (a.package_id=p.packageid)
+        ) a
+    </sql>
+    
+    
+    
+</root>
